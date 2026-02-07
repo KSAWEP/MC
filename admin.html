@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC State - لوحة التحكم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0f14;
+            --bg-darker: #060a0d;
+            --bg-card: #12171c;
+            --orange: #00d4aa;
+            --orange-dark: #00b894;
+            --text-white: #ffffff;
+            --text-gray: #8a8f98;
+            --border-color: #1e2428;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg-dark); color: var(--text-white); min-height: 100vh; }
+
+        .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-darker), var(--bg-dark)); }
+        .login-box { background: var(--bg-card); border-radius: 20px; padding: 50px 40px; width: 100%; max-width: 420px; border: 1px solid var(--border-color); }
+        .login-logo { text-align: center; margin-bottom: 30px; }
+        .login-logo img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; }
+        .login-logo h1 { font-size: 28px; color: var(--orange); }
+        .login-logo p { color: var(--text-gray); margin-top: 5px; }
+        .login-form .form-group { margin-bottom: 20px; }
+        .login-form label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .login-form input { width: 100%; padding: 15px 20px; background: var(--bg-darker); border: 2px solid var(--border-color); border-radius: 10px; color: var(--text-white); font-family: 'Cairo', sans-serif; font-size: 16px; }
+        .login-form input:focus { outline: none; border-color: var(--orange); }
+        .login-btn { width: 100%; padding: 16px; background: var(--orange); border: none; border-radius: 10px; color: white; font-family: 'Cairo', sans-serif; font-size: 18px; font-weight: 700; cursor: pointer; }
+        .login-btn:hover { background: var(--orange-dark); }
+        .login-error { background: rgba(220,53,69,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; display: none; }
+
+        .dashboard { display: none; }
+        .dashboard.active { display: flex; }
+
+        .sidebar { width: 280px; height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border-color); padding: 20px 0; position: fixed; right: 0; top: 0; overflow-y: auto; }
+        .sidebar-header { padding: 20px 25px 30px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .sidebar-header .logo { display: flex; align-items: center; gap: 12px; }
+        .sidebar-header img { width: 50px; height: 50px; border-radius: 50%; }
+        .sidebar-header h2 { font-size: 20px; color: var(--orange); }
+        .sidebar-header p { font-size: 12px; color: var(--text-gray); }
+        .nav-section { padding: 0 15px; margin-bottom: 25px; }
+        .nav-section-title { font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; padding: 0 10px; margin-bottom: 10px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 15px; border-radius: 10px; color: var(--text-gray); cursor: pointer; transition: all 0.3s; margin-bottom: 5px; }
+        .nav-item:hover { background: rgba(0,212,170,0.1); color: var(--orange); }
+        .nav-item.active { background: var(--orange); color: white; }
+        .nav-item .material-icons { font-size: 22px; }
+        .nav-item .badge { margin-right: auto; background: var(--danger); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .sidebar-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; border-top: 1px solid var(--border-color); }
+        .logout-btn { width: 100%; padding: 12px; background: transparent; border: 2px solid var(--danger); border-radius: 10px; color: var(--danger); font-family: 'Cairo', sans-serif; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        .main-content { margin-right: 280px; padding: 30px; flex: 1; min-height: 100vh; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .page-title { font-size: 28px; font-weight: 800; }
+        .page-title .material-icons { color: var(--orange); vertical-align: middle; margin-left: 10px; }
+
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 25px; border: none; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--orange); color: white; }
+        .btn-primary:hover { background: var(--orange-dark); }
+        .btn-secondary { background: var(--bg-card); color: var(--text-white); border: 1px solid var(--border-color); text-decoration: none; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--bg-card); border-radius: 15px; padding: 25px; border: 1px solid var(--border-color); }
+        .stat-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+        .stat-card .icon.orange { background: rgba(0,212,170,0.15); color: var(--orange); }
+        .stat-card .icon.green { background: rgba(40,167,69,0.15); color: var(--success); }
+        .stat-card .icon.blue { background: rgba(23,162,184,0.15); color: var(--info); }
+        .stat-card .icon.red { background: rgba(220,53,69,0.15); color: var(--danger); }
+        .stat-card h3 { font-size: 32px; font-weight: 800; margin-bottom: 5px; }
+        .stat-card p { color: var(--text-gray); font-size: 14px; }
+
+        .card { background: var(--bg-card); border-radius: 15px; border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 25px; }
+        .card-header { padding: 20px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .card-body { padding: 25px; }
+
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px 20px; text-align: right; border-bottom: 1px solid var(--border-color); }
+        th { background: var(--bg-darker); font-weight: 700; color: var(--text-gray); font-size: 13px; }
+        tr:hover { background: rgba(0,212,170,0.03); }
+
+        .badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .badge-success { background: rgba(40,167,69,0.15); color: var(--success); }
+        .badge-danger { background: rgba(220,53,69,0.15); color: var(--danger); }
+        .badge-warning { background: rgba(255,193,7,0.15); color: var(--warning); }
+        .badge-info { background: rgba(23,162,184,0.15); color: var(--info); }
+        .badge-orange { background: rgba(0,212,170,0.15); color: var(--orange); }
+
+        .actions { display: flex; gap: 8px; }
+        .action-btn { width: 38px; height: 38px; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .action-btn .material-icons { font-size: 18px; }
+        .action-btn.edit { background: rgba(0,212,170,0.15); color: var(--orange); }
+        .action-btn.delete { background: rgba(220,53,69,0.15); color: var(--danger); }
+        .action-btn.approve { background: rgba(40,167,69,0.15); color: var(--success); }
+        .action-btn.view { background: rgba(23,162,184,0.15); color: var(--info); }
+        .action-btn:hover { transform: scale(1.1); }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .tab { padding: 10px 25px; background: transparent; border: none; color: var(--text-gray); font-family: 'Cairo', sans-serif; font-weight: 600; cursor: pointer; border-radius: 8px; }
+        .tab:hover { background: rgba(0,212,170,0.1); color: var(--orange); }
+        .tab.active { background: var(--orange); color: white; }
+
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-gray); }
+        .empty-state .material-icons { font-size: 60px; opacity: 0.3; margin-bottom: 15px; display: block; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .form-control { width: 100%; padding: 14px 18px; background: var(--bg-darker); border: 2px solid var(--border-color); border-radius: 10px; color: var(--text-white); font-family: 'Cairo', sans-serif; font-size: 15px; }
+        .form-control:focus { outline: none; border-color: var(--orange); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-card); border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .modal-close { background: none; border: none; color: var(--text-gray); cursor: pointer; font-size: 28px; }
+        .modal-close:hover { color: var(--danger); }
+        .modal-body { padding: 25px; }
+        .modal-footer { padding: 20px 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
+
+        .toast { position: fixed; bottom: 30px; left: 30px; background: var(--bg-card); padding: 15px 25px; border-radius: 12px; border-right: 4px solid var(--success); box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(100px); opacity: 0; transition: all 0.4s; z-index: 2000; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-right-color: var(--danger); }
+
+        .detail-row { display: flex; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { width: 150px; color: var(--text-gray); font-weight: 600; }
+        .detail-value { flex: 1; }
+
+        .firebase-status { padding: 10px 20px; background: rgba(40,167,69,0.1); border: 1px solid var(--success); border-radius: 8px; color: var(--success); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .firebase-status.error { background: rgba(220,53,69,0.1); border-color: var(--danger); color: var(--danger); }
+
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(100%); }
+            .main-content { margin-right: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="./logo.webp" alt="MC State">
+                <h1>MC State</h1>
+                <p>لوحة التحكم</p>
+            </div>
+            <div class="login-error" id="loginError">كلمة السر غير صحيحة</div>
+            <form class="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>كلمة السر</label>
+                    <input type="password" id="passwordInput" placeholder="أدخل كلمة السر" required>
+                </div>
+                <button type="submit" class="login-btn"><span class="material-icons" style="vertical-align:middle;margin-left:8px">login</span> دخول</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="./logo.webp" alt="MC State">
+                    <div><h2>MC State</h2><p>لوحة التحكم</p></div>
+                </div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">الرئيسية</div>
+                <div class="nav-item active" onclick="showPage('home', this)"><span class="material-icons">dashboard</span><span>نظرة عامة</span></div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">المتجر</div>
+                <div class="nav-item" onclick="window.location.href='./store-admin.html'"><span class="material-icons">inventory_2</span><span>المنتجات</span></div>
+                <div class="nav-item" onclick="showPage('orders', this)"><span class="material-icons">shopping_bag</span><span>الطلبات</span><span class="badge" id="ordersCount">0</span></div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">التقديمات</div>
+                <div class="nav-item" onclick="showPage('applications', this)"><span class="material-icons">assignment</span><span>كل التقديمات</span><span class="badge" id="applicationsCount">0</span></div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">الإعدادات</div>
+                <div class="nav-item" onclick="showPage('settings', this)"><span class="material-icons">settings</span><span>إعدادات الموقع</span></div>
+            </div>
+            <div class="sidebar-footer"><button class="logout-btn" onclick="logout()"><span class="material-icons">logout</span> تسجيل خروج</button></div>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-section active" id="page-home">
+                <div class="page-header">
+                    <h1 class="page-title"><span class="material-icons">dashboard</span> نظرة عامة</h1>
+                    <a href="./index.html" target="_blank" class="btn btn-secondary"><span class="material-icons">open_in_new</span> عرض الموقع</a>
+                </div>
+                <div class="firebase-status" id="firebaseStatus"><span class="material-icons">cloud</span> <span id="firebaseStatusText">جاري الاتصال بـ Firebase...</span></div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="icon orange"><span class="material-icons">inventory_2</span></div><h3 id="stat-products">0</h3><p>إجمالي المنتجات</p></div>
+                    <div class="stat-card"><div class="icon green"><span class="material-icons">shopping_bag</span></div><h3 id="stat-orders">0</h3><p>الطلبات</p></div>
+                    <div class="stat-card"><div class="icon blue"><span class="material-icons">assignment</span></div><h3 id="stat-applications">0</h3><p>التقديمات</p></div>
+                    <div class="stat-card"><div class="icon red"><span class="material-icons">attach_money</span></div><h3 id="stat-revenue">$0</h3><p>إجمالي المبيعات</p></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3><span class="material-icons">trending_up</span> آخر الطلبات</h3></div>
+                    <div class="table-container">
+                        <table><thead><tr><th>رقم الطلب</th><th>العميل</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+                        <tbody id="recentOrdersTable"><tr><td colspan="5" class="empty-state">لا توجد طلبات</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-section" id="page-orders">
+                <div class="page-header"><h1 class="page-title"><span class="material-icons">shopping_bag</span> إدارة الطلبات</h1></div>
+                <div class="tabs">
+                    <button class="tab active" onclick="filterOrders('all', this)">الكل</button>
+                    <button class="tab" onclick="filterOrders('pending', this)">قيد الانتظار</button>
+                    <button class="tab" onclick="filterOrders('completed', this)">مكتمل</button>
+                    <button class="tab" onclick="filterOrders('cancelled', this)">ملغي</button>
+                </div>
+                <div class="card"><div class="table-container">
+                    <table><thead><tr><th>رقم الطلب</th><th>العميل</th><th>المنتجات</th><th>المبلغ</th><th>طريقة الدفع</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
+                    <tbody id="ordersTable"></tbody></table>
+                </div></div>
+            </div>
+
+            <div class="page-section" id="page-applications">
+                <div class="page-header"><h1 class="page-title"><span class="material-icons">assignment</span> التقديمات</h1></div>
+                <div class="tabs">
+                    <button class="tab active" onclick="filterApplications('all', this)">الكل</button>
+                    <button class="tab" onclick="filterApplications('military', this)">العسكرية</button>
+                    <button class="tab" onclick="filterApplications('admin', this)">الإدارة</button>
+                    <button class="tab" onclick="filterApplications('streamer', this)">الستريمر</button>
+                </div>
+                <div class="card"><div class="table-container">
+                    <table><thead><tr><th>النوع</th><th>الاسم</th><th>الديسكورد</th><th>العمر</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
+                    <tbody id="applicationsTable"></tbody></table>
+                </div></div>
+            </div>
+
+            <div class="page-section" id="page-settings">
+                <div class="page-header"><h1 class="page-title"><span class="material-icons">settings</span> إعدادات الموقع</h1></div>
+                <div class="card">
+                    <div class="card-header"><h3><span class="material-icons">link</span> روابط التواصل</h3></div>
+                    <div class="card-body">
+                        <div class="form-group"><label>رابط الديسكورد</label><input type="url" class="form-control" id="setting-discord" placeholder="https://discord.gg/..."></div>
+                        <div class="form-group"><label>رابط التيك توك</label><input type="url" class="form-control" id="setting-tiktok" placeholder="https://tiktok.com/..."></div>
+                        <div class="form-group"><label>رابط اليوتيوب</label><input type="url" class="form-control" id="setting-youtube" placeholder="https://youtube.com/..."></div>
+                        <button class="btn btn-primary" onclick="saveSettings()"><span class="material-icons">save</span> حفظ الإعدادات</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3><span class="material-icons">account_balance</span> بيانات الدفع</h3></div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group"><label>اسم صاحب حساب STC</label><input type="text" class="form-control" id="setting-stc-name"></div>
+                            <div class="form-group"><label>رقم حساب STC</label><input type="text" class="form-control" id="setting-stc-account"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>اسم صاحب حساب الراجحي</label><input type="text" class="form-control" id="setting-rajhi-name"></div>
+                            <div class="form-group"><label>رقم حساب الراجحي</label><input type="text" class="form-control" id="setting-rajhi-account"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="savePaymentSettings()"><span class="material-icons">save</span> حفظ بيانات الدفع</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="appModal">
+        <div class="modal">
+            <div class="modal-header"><h3><span class="material-icons" style="color:var(--orange)">assignment</span> تفاصيل التقديم</h3><button class="modal-close" onclick="closeAppModal()"><span class="material-icons">close</span></button></div>
+            <div class="modal-body" id="appDetails"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" onclick="closeAppModal()">إغلاق</button></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCHSSG-H8lARcSScKc6WX2xiYy5W5FmzUI",
+            authDomain: "mcstate-51aff.firebaseapp.com",
+            projectId: "mcstate-51aff",
+            storageBucket: "mcstate-51aff.firebasestorage.app",
+            messagingSenderId: "938934256525",
+            appId: "1:938934256525:web:415533592415996921f3c4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const ADMIN_PASSWORD = 'mc_2026';
+        let products = [], orders = [], applications = [];
+
+        function handleLogin(e) {
+            e.preventDefault();
+            if (document.getElementById('passwordInput').value === ADMIN_PASSWORD) {
+                localStorage.setItem('nc_admin_logged', 'true');
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                loadAllData();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        function logout() { localStorage.removeItem('nc_admin_logged'); location.reload(); }
+
+        function checkLogin() {
+            if (localStorage.getItem('nc_admin_logged') === 'true') {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                loadAllData();
+            }
+        }
+
+        function showPage(page, el) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            if (el) el.classList.add('active');
+        }
+
+        async function loadAllData() {
+            try {
+                await Promise.all([loadProducts(), loadOrders(), loadApplications(), loadSettings()]);
+                updateStats();
+                document.getElementById('firebaseStatus').innerHTML = '<span class="material-icons">cloud_done</span> <span>متصل بـ Firebase ✅</span>';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('firebaseStatus').classList.add('error');
+                document.getElementById('firebaseStatus').innerHTML = '<span class="material-icons">cloud_off</span> <span>خطأ في الاتصال بـ Firebase</span>';
+            }
+        }
+
+        async function loadProducts() {
+            const snapshot = await db.collection('products').get();
+            products = [];
+            snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+        }
+
+        async function loadOrders() {
+            const snapshot = await db.collection('orders').orderBy('date', 'desc').get();
+            orders = [];
+            snapshot.forEach(doc => orders.push({ docId: doc.id, ...doc.data() }));
+            renderOrders();
+            renderRecentOrders();
+            document.getElementById('ordersCount').textContent = orders.length;
+        }
+
+        function renderOrders(filtered = null) {
+            const data = filtered || orders;
+            const table = document.getElementById('ordersTable');
+            if (data.length === 0) { table.innerHTML = '<tr><td colspan="8" class="empty-state"><span class="material-icons">shopping_bag</span>لا توجد طلبات</td></tr>'; return; }
+            table.innerHTML = data.map(o => `<tr>
+                <td><strong>${o.id || '-'}</strong></td>
+                <td>${o.customer || '-'}</td>
+                <td>${Array.isArray(o.products) ? o.products.slice(0,2).join(', ') : '-'}</td>
+                <td><strong>$${(o.amount || 0).toFixed(2)}</strong></td>
+                <td>${o.paymentMethod === 'stc' ? 'STC Pay' : 'الراجحي'}</td>
+                <td>${getStatusBadge(o.status)}</td>
+                <td>${o.date ? new Date(o.date).toLocaleDateString('ar') : '-'}</td>
+                <td><div class="actions">
+                    <button class="action-btn approve" onclick="updateOrderStatus('${o.docId}', 'completed')"><span class="material-icons">check</span></button>
+                    <button class="action-btn delete" onclick="updateOrderStatus('${o.docId}', 'cancelled')"><span class="material-icons">close</span></button>
+                </div></td>
+            </tr>`).join('');
+        }
+
+        function renderRecentOrders() {
+            const recent = orders.slice(0, 5);
+            const table = document.getElementById('recentOrdersTable');
+            if (recent.length === 0) { table.innerHTML = '<tr><td colspan="5" class="empty-state">لا توجد طلبات</td></tr>'; return; }
+            table.innerHTML = recent.map(o => `<tr>
+                <td><strong>${o.id || '-'}</strong></td>
+                <td>${o.customer || '-'}</td>
+                <td><strong>$${(o.amount || 0).toFixed(2)}</strong></td>
+                <td>${getStatusBadge(o.status)}</td>
+                <td>${o.date ? new Date(o.date).toLocaleDateString('ar') : '-'}</td>
+            </tr>`).join('');
+        }
+
+        function filterOrders(status, btn) {
+            document.querySelectorAll('#page-orders .tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            renderOrders(status === 'all' ? orders : orders.filter(o => o.status === status));
+        }
+
+        async function updateOrderStatus(docId, status) {
+            try {
+                await db.collection('orders').doc(docId).update({ status });
+                await loadOrders();
+                updateStats();
+                showToast('تم تحديث حالة الطلب ✅');
+            } catch (e) { showToast('خطأ في التحديث', true); }
+        }
+
+        function getStatusBadge(s) {
+            return s === 'pending' ? '<span class="badge badge-warning">قيد الانتظار</span>' :
+                   s === 'completed' ? '<span class="badge badge-success">مكتمل</span>' :
+                   s === 'cancelled' ? '<span class="badge badge-danger">ملغي</span>' :
+                   '<span class="badge badge-info">جديد</span>';
+        }
+
+        async function loadApplications() {
+            const snapshot = await db.collection('applications').orderBy('date', 'desc').get();
+            applications = [];
+            snapshot.forEach(doc => applications.push({ docId: doc.id, ...doc.data() }));
+            renderApplications();
+            document.getElementById('applicationsCount').textContent = applications.length;
+        }
+
+        function renderApplications(filtered = null) {
+            const data = filtered || applications;
+            const table = document.getElementById('applicationsTable');
+            if (data.length === 0) { table.innerHTML = '<tr><td colspan="7" class="empty-state"><span class="material-icons">assignment</span>لا توجد تقديمات</td></tr>'; return; }
+            table.innerHTML = data.map((a, i) => `<tr>
+                <td>${getTypeBadge(a.type)}</td>
+                <td><strong>${a.name || '-'}</strong></td>
+                <td>${a.discord || '-'}</td>
+                <td>${a.age || '-'}</td>
+                <td>${getAppStatusBadge(a.status)}</td>
+                <td>${a.date ? new Date(a.date).toLocaleDateString('ar') : '-'}</td>
+                <td><div class="actions">
+                    <button class="action-btn view" onclick="viewApp(${i})"><span class="material-icons">visibility</span></button>
+                    <button class="action-btn approve" onclick="updateAppStatus('${a.docId}', 'approved')"><span class="material-icons">check</span></button>
+                    <button class="action-btn delete" onclick="updateAppStatus('${a.docId}', 'rejected')"><span class="material-icons">close</span></button>
+                </div></td>
+            </tr>`).join('');
+        }
+
+        function filterApplications(type, btn) {
+            document.querySelectorAll('#page-applications .tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            renderApplications(type === 'all' ? applications : applications.filter(a => a.type === type));
+        }
+
+        function getTypeBadge(t) {
+            return t === 'military' ? '<span class="badge badge-info">العسكرية</span>' :
+                   t === 'admin' ? '<span class="badge badge-orange">الإدارة</span>' :
+                   t === 'streamer' ? '<span class="badge badge-success">الستريمر</span>' : '<span class="badge">غير محدد</span>';
+        }
+
+        function getAppStatusBadge(s) {
+            return s === 'approved' ? '<span class="badge badge-success">مقبول</span>' :
+                   s === 'rejected' ? '<span class="badge badge-danger">مرفوض</span>' :
+                   '<span class="badge badge-warning">قيد المراجعة</span>';
+        }
+
+        function viewApp(i) {
+            const a = applications[i];
+            let html = `<div class="detail-row"><div class="detail-label">النوع:</div><div class="detail-value">${getTypeBadge(a.type)}</div></div>`;
+            if (a.name) html += `<div class="detail-row"><div class="detail-label">الاسم:</div><div class="detail-value">${a.name}</div></div>`;
+            if (a.discord) html += `<div class="detail-row"><div class="detail-label">الديسكورد:</div><div class="detail-value">${a.discord}</div></div>`;
+            if (a.age) html += `<div class="detail-row"><div class="detail-label">العمر:</div><div class="detail-value">${a.age} سنة</div></div>`;
+            if (a.character) html += `<div class="detail-row"><div class="detail-label">اسم الشخصية:</div><div class="detail-value">${a.character}</div></div>`;
+            if (a.experience) html += `<div class="detail-row"><div class="detail-label">الخبرات:</div><div class="detail-value">${a.experience}</div></div>`;
+            if (a.reason) html += `<div class="detail-row"><div class="detail-label">سبب التقديم:</div><div class="detail-value">${a.reason}</div></div>`;
+            if (a.platform) html += `<div class="detail-row"><div class="detail-label">المنصة:</div><div class="detail-value">${a.platform}</div></div>`;
+            if (a.channel) html += `<div class="detail-row"><div class="detail-label">القناة:</div><div class="detail-value">${a.channel}</div></div>`;
+            if (a.followers) html += `<div class="detail-row"><div class="detail-label">المتابعين:</div><div class="detail-value">${a.followers}</div></div>`;
+            if (a.link) html += `<div class="detail-row"><div class="detail-label">الرابط:</div><div class="detail-value"><a href="${a.link}" target="_blank" style="color:var(--orange)">${a.link}</a></div></div>`;
+            document.getElementById('appDetails').innerHTML = html;
+            document.getElementById('appModal').classList.add('active');
+        }
+
+        function closeAppModal() { document.getElementById('appModal').classList.remove('active'); }
+
+        async function updateAppStatus(docId, status) {
+            try {
+                await db.collection('applications').doc(docId).update({ status });
+                await loadApplications();
+                showToast('تم تحديث حالة التقديم ✅');
+            } catch (e) { showToast('خطأ في التحديث', true); }
+        }
+
+        function updateStats() {
+            document.getElementById('stat-products').textContent = products.length;
+            document.getElementById('stat-orders').textContent = orders.length;
+            document.getElementById('stat-applications').textContent = applications.length;
+            const revenue = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.amount || 0), 0);
+            document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
+        }
+
+        async function loadSettings() {
+            try {
+                const doc = await db.collection('settings').doc('main').get();
+                if (doc.exists) {
+                    const s = doc.data();
+                    if (s.discord) document.getElementById('setting-discord').value = s.discord;
+                    if (s.tiktok) document.getElementById('setting-tiktok').value = s.tiktok;
+                    if (s.youtube) document.getElementById('setting-youtube').value = s.youtube;
+                    if (s.stcName) document.getElementById('setting-stc-name').value = s.stcName;
+                    if (s.stcAccount) document.getElementById('setting-stc-account').value = s.stcAccount;
+                    if (s.rajhiName) document.getElementById('setting-rajhi-name').value = s.rajhiName;
+                    if (s.rajhiAccount) document.getElementById('setting-rajhi-account').value = s.rajhiAccount;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveSettings() {
+            try {
+                await db.collection('settings').doc('main').set({
+                    discord: document.getElementById('setting-discord').value,
+                    tiktok: document.getElementById('setting-tiktok').value,
+                    youtube: document.getElementById('setting-youtube').value
+                }, { merge: true });
+                showToast('تم حفظ الإعدادات ✅');
+            } catch (e) { showToast('خطأ في الحفظ', true); }
+        }
+
+        async function savePaymentSettings() {
+            try {
+                await db.collection('settings').doc('main').set({
+                    stcName: document.getElementById('setting-stc-name').value,
+                    stcAccount: document.getElementById('setting-stc-account').value,
+                    rajhiName: document.getElementById('setting-rajhi-name').value,
+                    rajhiAccount: document.getElementById('setting-rajhi-account').value
+                }, { merge: true });
+                showToast('تم حفظ بيانات الدفع ✅');
+            } catch (e) { showToast('خطأ في الحفظ', true); }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast' + (isError ? ' error' : '');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        checkLogin();
+    </script>
+</body>
+</html>
