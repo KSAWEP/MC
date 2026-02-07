@@ -1940,9 +1940,7 @@
           <li><a href="#" onclick="navigateToPage('jobs')">التقديم</a></li>
         </ul>
       </nav>
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <button class="btn-angled" id="btn-login-main" onclick="window.location.href='./store.html'">الدخول للمتجر</button>
-      </div>
+      <button class="btn-angled" id="btn-login-main" onclick="window.location.href='./store.html'">الدخول للمتجر</button>
       <div id="user-info" style="display:none; align-items:center; gap:15px; color:#fff;">
         <img src="" id="user-avatar"
           style="width:40px; height:40px; border-radius:50%; border:2px solid var(--color-primary); cursor:pointer;"
@@ -1966,12 +1964,7 @@
       <div class="hero-bg-logo"></div>
       <div class="hero-content">
         <h1 class="hero-title">MC State</h1>
-        <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
-          <button class="btn-angled hero-btn" onclick="window.location.href='./store.html'">الدخول للمتجر</button>
-          <a href="https://discord.com/api/oauth2/authorize?client_id=1469795188065964384&redirect_uri=https%3A%2F%2Fksawep.github.io%2FMC%2Fcallback.html&response_type=code&scope=identify%20guilds.join" style="display: flex; align-items: center; gap: 10px; padding: 14px 35px; background: linear-gradient(135deg, #5865F2, #4752C4); color: white; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; font-family: 'Cairo', sans-serif; transition: all 0.3s; border: 2px solid transparent;">
-            <i class="fab fa-discord"></i> تسجيل الدخول بالدسكورد
-          </a>
-        </div>
+        <button class="btn-angled hero-btn" onclick="window.location.href='./store.html'">الدخول للمتجر</button>
       </div>
     </div>
   </div>
@@ -3484,9 +3477,9 @@
     }
 
     const applicationWebhooks = {
-      military: 'https://discord.com/api/webhooks/1469794167654977880/EMpDHsKy5kKHontJ-3HL0Jb_Eg_Pm33g9YJC6edtT02cZ2mVlCCdU6g1S5Q8MK0SFrUB',
-      admin: 'https://discord.com/api/webhooks/1469794406663061575/Vws8RIyPV7u0is2ywCD9teGhg8jmLTjIyQbQlD4U-alfPYYmkWOFOqh2ozNdwX0PRI0M',
-      streamer: 'https://discord.com/api/webhooks/1469793842092966201/6ZAxVEHYVaRpAUh-sOIh3DNN9l4l62a_dDwlDsgLMvADuCuIiyz-M9LNsnSaSnchqrud'
+      military: 'https://discord.com/api/webhooks/1469713241545510953/Lbqlq0uXXNFPZx_cK4jsNinnqr8CpqfgsFXbJf8I7FunATEUTWitzKtdTNBTVZ1KVb4D',
+      admin: 'https://discord.com/api/webhooks/1469712909734121582/OeUPI0YG6BO7B16Dmh5DyeZ24YVAH3ASbvovlSgEfKtW4b1M16SHfIx84_qtL0049tVG',
+      streamer: 'https://discord.com/api/webhooks/1469712909734121582/OeUPI0YG6BO7B16Dmh5DyeZ24YVAH3ASbvovlSgEfKtW4b1M16SHfIx84_qtL0049tVG'
     };
 
     function openApplicationModal(type) {
@@ -3509,16 +3502,6 @@
     async function submitApplicationForm(event, type) {
       event.preventDefault();
       
-      // Get logged in user
-      const savedUser = localStorage.getItem('mcstate_user');
-      let userMention = '';
-      let userId = '';
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        userId = user.id;
-        userMention = `<@${user.id}>`;
-      }
-      
       let embed;
       let submitBtn;
 
@@ -3534,8 +3517,7 @@
             { name: '👤 الاسم', value: document.getElementById('mil-name').value, inline: true },
             { name: '🎮 اسم الشخصية', value: document.getElementById('mil-character').value, inline: true },
             { name: '💬 الديسكورد', value: document.getElementById('mil-discord').value, inline: true },
-            { name: '🎂 العمر', value: document.getElementById('mil-age').value + ' سنة', inline: true },
-            { name: '🔗 حساب Discord', value: userMention || 'غير مسجل دخول', inline: true }
+            { name: '🎂 العمر', value: document.getElementById('mil-age').value + ' سنة', inline: true }
           ],
           footer: { text: 'MC State - تقديم العسكرية' },
           timestamp: new Date().toISOString()
@@ -3554,8 +3536,7 @@
             { name: '🎂 العمر', value: document.getElementById('adm-age').value + ' سنة', inline: true },
             { name: '📝 الخبرات الإدارية', value: document.getElementById('adm-experience').value, inline: false },
             { name: '❓ سبب التقديم', value: document.getElementById('adm-reason').value, inline: false },
-            { name: '🔄 إداري سابق؟', value: document.getElementById('adm-previous').value, inline: true },
-            { name: '🔗 حساب Discord', value: userMention || 'غير مسجل دخول', inline: true }
+            { name: '🔄 إداري سابق؟', value: document.getElementById('adm-previous').value, inline: true }
           ],
           footer: { text: 'MC State - تقديم الإدارة' },
           timestamp: new Date().toISOString()
@@ -3574,26 +3555,19 @@
             { name: '📛 اسم القناة', value: document.getElementById('str-channel').value, inline: true },
             { name: '👥 عدد المتابعين', value: document.getElementById('str-followers').value, inline: true },
             { name: '🔗 الرابط', value: document.getElementById('str-link').value, inline: false },
-            { name: '📝 الخبرات وما سيقدمه', value: document.getElementById('str-experience').value, inline: false },
-            { name: '🔗 حساب Discord', value: userMention || 'غير مسجل دخول', inline: true }
+            { name: '📝 الخبرات وما سيقدمه', value: document.getElementById('str-experience').value, inline: false }
           ],
           footer: { text: 'MC State - تقديم الستريمر' },
           timestamp: new Date().toISOString()
         };
       }
 
-      // Add mention content if user is logged in
-      const messageContent = userMention ? `تقديم جديد من ${userMention}` : '';
-
       try {
         // Send to Discord (no await to avoid CORS blocking)
         fetch(applicationWebhooks[type], {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            content: messageContent,
-            embeds: [embed] 
-          })
+          body: JSON.stringify({ embeds: [embed] })
         }).catch(e => console.log('Discord webhook sent'));
 
         // Save to Firebase/localStorage
