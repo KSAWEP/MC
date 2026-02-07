@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC State - تسجيل الدخول</title>
+    <link rel="icon" href="./logo.webp">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #0a0f14;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            direction: rtl;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin-bottom: 30px;
+            border: 4px solid #00d4aa;
+        }
+        h1 {
+            color: #00d4aa;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #8a8f98;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #1e2428;
+            border-top-color: #00d4aa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .success {
+            background: rgba(0, 212, 170, 0.1);
+            border: 2px solid #00d4aa;
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: none;
+        }
+        .success h2 {
+            color: #00d4aa;
+            margin-bottom: 10px;
+        }
+        .error {
+            background: rgba(220, 53, 69, 0.1);
+            border: 2px solid #dc3545;
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: none;
+        }
+        .error h2 {
+            color: #dc3545;
+            margin-bottom: 10px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #00d4aa;
+            color: #000;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #00f5c4;
+            transform: scale(1.05);
+        }
+        .user-info {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #00d4aa;
+        }
+        .user-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="./logo.webp" alt="MC State" class="logo">
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <h1>جاري تسجيل الدخول...</h1>
+            <p>يرجى الانتظار</p>
+        </div>
+        
+        <div id="success" class="success">
+            <h2>✅ تم تسجيل الدخول بنجاح!</h2>
+            <div class="user-info" id="userInfo">
+                <img src="" alt="Avatar" class="user-avatar" id="userAvatar">
+                <span class="user-name" id="userName"></span>
+            </div>
+            <p>مرحباً بك في MC State</p>
+            <a href="./index.html" class="btn">الذهاب للموقع</a>
+        </div>
+        
+        <div id="error" class="error">
+            <h2>❌ حدث خطأ</h2>
+            <p id="errorMsg">فشل تسجيل الدخول</p>
+            <a href="./index.html" class="btn">العودة للموقع</a>
+        </div>
+    </div>
+
+    <script>
+        const CLIENT_ID = '1469795188065964384';
+        const CLIENT_SECRET = '0j6YYosgacdc2qwXDyaJVhkSePxg2byI';
+        const REDIRECT_URI = 'https://ksawep.github.io/MC/callback.html';
+
+        async function handleCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+
+            if (error) {
+                showError('تم إلغاء تسجيل الدخول');
+                return;
+            }
+
+            if (!code) {
+                showError('لم يتم العثور على رمز التفويض');
+                return;
+            }
+
+            try {
+                // Exchange code for token
+                const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        client_id: CLIENT_ID,
+                        client_secret: CLIENT_SECRET,
+                        grant_type: 'authorization_code',
+                        code: code,
+                        redirect_uri: REDIRECT_URI,
+                    }),
+                });
+
+                const tokenData = await tokenResponse.json();
+
+                if (tokenData.error) {
+                    showError(tokenData.error_description || 'فشل في الحصول على التوكن');
+                    return;
+                }
+
+                // Get user info
+                const userResponse = await fetch('https://discord.com/api/users/@me', {
+                    headers: {
+                        Authorization: `Bearer ${tokenData.access_token}`,
+                    },
+                });
+
+                const userData = await userResponse.json();
+
+                if (userData.id) {
+                    // Save user data
+                    const user = {
+                        id: userData.id,
+                        username: userData.username,
+                        globalName: userData.global_name || userData.username,
+                        avatar: userData.avatar 
+                            ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
+                            : `https://cdn.discordapp.com/embed/avatars/${parseInt(userData.discriminator || '0') % 5}.png`,
+                        discriminator: userData.discriminator,
+                        token: tokenData.access_token
+                    };
+
+                    localStorage.setItem('mcstate_user', JSON.stringify(user));
+                    showSuccess(user);
+                } else {
+                    showError('فشل في الحصول على بيانات المستخدم');
+                }
+            } catch (err) {
+                console.error(err);
+                showError('حدث خطأ في الاتصال');
+            }
+        }
+
+        function showSuccess(user) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('success').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'flex';
+            document.getElementById('userAvatar').src = user.avatar;
+            document.getElementById('userName').textContent = user.globalName;
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = './index.html';
+            }, 2000);
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('errorMsg').textContent = message;
+        }
+
+        // Run on page load
+        handleCallback();
+    </script>
+</body>
+</html>
